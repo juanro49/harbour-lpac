@@ -1,0 +1,78 @@
+#!/bin/bash
+
+UPSTREAM_DIR=upstream
+
+##########################################
+# 1. LEER CAMBIOS DEL PAQUETE POR VERSIÓN
+##########################################
+
+declare -A PKG_CHANGELOG
+CURRENT_VERSION=""
+
+while IFS= read -r line; do
+    if [[ "$line" =~ ^\* ]]; then
+        VERSION=$(sed -E 's/.* - ([0-9]+\.[0-9]+\.[0-9]+).*/\1/' <<< "$line")
+        [[ -z "$VERSION" ]] && continue
+        CURRENT_VERSION="$VERSION"
+        PKG_CHANGELOG["$VERSION"]="$line"$'\n'
+    else
+        [[ -n "$CURRENT_VERSION" ]] && PKG_CHANGELOG["$CURRENT_VERSION"]+="$line"$'\n'
+    fi
+done < <(sfdk-changelog --tags refs/tags/* --auto-add-annotations --dense '.*')
+
+##########################################
+# 2. LEER CAMBIOS DEL UPSTREAM POR VERSIÓN
+##########################################
+
+declare -A UPSTREAM_CHANGELOG
+CURRENT_VERSION=""
+
+(
+    cd "$UPSTREAM_DIR"
+    sfdk-changelog --tags refs/tags/* --auto-add-annotations --dense '.*'
+) | while IFS= read -r line; do
+    if [[ "$line" =~ ^\* ]]; then
+        VERSION=$(sed -E 's/.* - ([0-9]+\.[0-9]+\.[0-9]+).*/\1/' <<< "$line")
+        [[ -z "$VERSION" ]] && continue
+        CURRENT_VERSION="$VERSION"
+        UPSTREAM_CHANGELOG["$VERSION"]="$line"$'\n'
+    else
+        [[ -n "$CURRENT_VERSION" ]] && UPSTREAM_CHANGELOG["$CURRENT_VERSION"]+="$line"$'\n'
+    fi
+done
+
+##########################################
+# 3. FUSIONAR Y MOSTRAR POR VERSIÓN
+##########################################
+
+# Obtener lista de versiones ordenadas (del upstream)
+VERSIONS=$(printf "%s\n" "${!UPSTREAM_CHANGELOG[@]}" | sort -Vr)
+
+for VERSION in $VERSIONS; do
+    # Cabecera: si el paquete tiene cabecera, usarla
+    if [[ -n "${PKG_CHANGELOG[$VERSION]}" ]]; then
+        HEADER=$(printf "%s" "${PKG_CHANGELOG[$VERSION]}" | head -n1)
+        echo "$HEADER"
+    else
+        HEADER=$(printf "%s" "${UPSTREAM_CHANGELOG[$VERSION]}" | head -n1)
+        echo "$HEADER"
+    fi
+
+    # Cambios del paquete
+    if [[ -n "${PKG_CHANGELOG[$VERSION]}" ]]; then
+        echo "- Package changes:"
+        printf "%s" "${PKG_CHANGELOG[$VERSION]}" \
+            | tail -n +2 \
+            | sed 's/^/  /'
+    fi
+
+    # Cambios del upstream
+    if [[ -n "${UPSTREAM_CHANGELOG[$VERSION]}" ]]; then
+        echo "- Upstream changes:"
+        printf "%s" "${UPSTREAM_CHANGELOG[$VERSION]}" \
+            | tail -n +2 \
+            | sed 's/^/  /'
+    fi
+
+    echo ""
+done
