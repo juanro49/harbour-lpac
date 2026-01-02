@@ -2,7 +2,7 @@ Name: lpac
 
 Summary: C-based eUICC LPA Local Profile Assistant Client (GSMA RSP)
 Version: 2.3.0
-Release: 1
+Release: 2
 License: MIT
 URL: https://github.com/estkme-group/lpac
 Source0: %{name}-%{version}.tar.gz
