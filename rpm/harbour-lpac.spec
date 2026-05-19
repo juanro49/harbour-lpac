@@ -10,6 +10,7 @@ Source0: %{name}-%{version}.tar.gz
 BuildRequires: cmake
 BuildRequires: gcc
 BuildRequires: make
+BuildRequires: git
 
 BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: pkgconfig(json-glib-1.0)
