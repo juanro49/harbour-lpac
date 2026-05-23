@@ -19,6 +19,7 @@ BuildRequires: pkgconfig(libpcsclite)
 BuildRequires: pkgconfig(libgbinder)
 BuildRequires: pkgconfig(libglibutil)
 BuildRequires: pkgconfig(openssl)
+BuildRequires: pkgconfig(libcjson)
 
 Requires: pcsc-lite
 Requires: pcsc-ccid
@@ -41,6 +42,7 @@ touch .git
 cmake -B build \
     -DCMAKE_INSTALL_PREFIX=%{_prefix} \
     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF \
+    -DUSE_SYSTEM_DEPS=ON \
     -DLPAC_WITH_APDU_AT=ON \
     -DLPAC_WITH_APDU_GBINDER=ON \
     -DLPAC_WITH_APDU_PCSC=ON \
@@ -88,6 +90,3 @@ Development headers and CMake files for LPAC.
 
 %files devel
 %{_includedir}/*
-%{_libdir}/cmake/*
-%{_libdir}/libcjson.a
-%{_libdir}/pkgconfig/libcjson.pc
